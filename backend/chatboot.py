@@ -7,44 +7,39 @@ import pickle
 import requests
 import time
 
+import gdown
+
 def load_model():
-    # Check volume location first
     volume_model_path = "/app/model_data/model.pkl"
     model_path = "model.pkl"
-    
-    # Use model from volume if it exists
+
     if os.path.exists(volume_model_path):
         print("Loading model from volume...")
         with open(volume_model_path, 'rb') as f:
-            model = pickle.load(f)
-        return model
-    
-    # Fallback to local path
+            return pickle.load(f)
+
     if os.path.exists(model_path):
         print("Loading model from local path...")
         with open(model_path, 'rb') as f:
-            model = pickle.load(f)
-        return model
-    
-    # If model not found locally, download from Google Drive
+            return pickle.load(f)
+
     print("Model not found locally. Downloading from Google Drive...")
     try:
-        # Extract file ID from the Google Drive link
-        file_id = "12zlu_C1WA1SFTla4cUG3hDVRpvqoK0dP"
+        # Fuzzy link (full link instead of just the ID)
+        url = "https://drive.google.com/file/d/12zlu_C1WA1SFTla4cUG3hDVRpvqoK0dP/view?usp=sharing"
         
-        # Download the file using gdown
-        gdown.download(f"https://drive.google.com/uc?id={file_id}", model_path, quiet=False)
-        
-        # Check if download was successful
+        # Use gdown with fuzzy mode
+        gdown.download(url, model_path, fuzzy=True, quiet=False)
+
         if os.path.exists(model_path):
             print("Model downloaded successfully!")
             with open(model_path, 'rb') as f:
-                model = pickle.load(f)
-            return model
+                return pickle.load(f)
         else:
             raise FileNotFoundError("Failed to download model file")
     except Exception as e:
         raise Exception(f"Error downloading model: {str(e)}")
+
 
 # Get the model when needed
 try:
