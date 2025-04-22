@@ -1,46 +1,13 @@
-import os
 from fastapi import APIRouter, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import gdown
 import pickle
-import requests
-import time
 
-import gdown
+# Load the model
+with open("model.pkl", "rb") as f:
+    model = pickle.load(f)
 
-def load_model():
-    model_path = "model.pkl"  # Local path in the root directory
-    volume_model_path = "/app/model_data/model.pkl"  # Path on the persistent volume
-    
-    # First check if model exists locally
-    if os.path.exists(model_path):
-        print("Loading model from local path...")
-        try:
-            with open(model_path, 'rb') as f:
-                return pickle.load(f)
-        except Exception as e:
-            print(f"Error loading local model: {str(e)}")
-    
-    # Then check if it exists on the volume
-    if os.path.exists(volume_model_path):
-        print("Loading model from volume...")
-        try:
-            with open(volume_model_path, 'rb') as f:
-                return pickle.load(f)
-        except Exception as e:
-            print(f"Error loading model from volume: {str(e)}")
-    
-    # If not found in either location, raise an error
-    raise FileNotFoundError("Model not found locally or on volume")
-
-# Get the model when needed
-try:
-    model = load_model()
-    print("Model loaded successfully!")
-except Exception as e:
-    print(f"Error loading model: {str(e)}")
-
+# Mapping of predicted intent labels to predefined chatbot responses
 intent_responses = {
     "StartConversation": "Welcome! I'm here to answer all your questions about blood donation. Feel free to ask me whatever you're interested in.",
     
@@ -80,19 +47,39 @@ intent_responses = {
     
     "ExerciseAfterDonation": "It's advised against practicing intense physical activity within 24 hours following a blood donation. Particularly avoid swimming, cycling, intensive running, or heavy weightlifting. These precautions allow your body to recover and avoid dizziness or discomfort related to the temporary decrease in blood volume."
 }
-# Définir l'app FastAPI
+
+# Create an APIRouter instance to modularize the application
 router = APIRouter()
 
-
-# Modèle d'entrée
+# Pydantic model to validate the structure of incoming user message
 class MessageInput(BaseModel):
+    """
+    Defines the expected schema of the incoming JSON payload.
+    """
     message: str
 
 @router.post("/chatboot")
 async def chatboot(data: MessageInput):
+    """
+    Predicts the user's intent based on their message using a pre-trained ML model,
+    then returns a corresponding pre-defined response.
+
+    Parameters:
+        data (MessageInput): Contains the user's question or message.
+
+    Returns:
+        dict: A dictionary with the predicted intent and the chatbot's response.
+    """
+    # Extract the raw text message from the request
     question = data.message
+
+    # Predict the intent using the ML model
     intent = model.predict([question])[0]
+
+    # Get the appropriate response based on the predicted intent
     response = intent_responses.get(intent, "Je n'ai pas compris, réessayez.")
+    
+    # Return the prediction and chatbot response
     return {
         "intent": intent,
         "response": response
