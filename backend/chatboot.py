@@ -5,6 +5,7 @@ from pydantic import BaseModel
 import gdown
 import pickle
 import requests
+import time
 
 # Charger le pipeline
 def load_model():
@@ -14,26 +15,59 @@ def load_model():
     if not os.path.exists(model_path):
         print("Téléchargement du modèle depuis Google Drive...")
         
-        # Your Google Drive file ID from the shared link
+        # Your Google Drive file ID
         file_id = "12zlu_C1WA1SFTla4cUG3hDVRpvqoK0dP"
-        url = f"https://drive.google.com/uc?export=download&id={file_id}"
         
-        # Handle large file download (Google Drive confirmation page)
+        # For large files, we need to use a different approach
+        download_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm=t"
+        
+        # Add headers to mimic a browser request
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        
+        # Download with a session to handle cookies
         session = requests.Session()
-        response = session.get(url, stream=True)
         
-        # Check if there's a download warning (for large files)
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                url = f"{url}&confirm={value}"
-                response = session.get(url, stream=True)
-                break
+        # First request to get the confirmation token
+        response = session.get(download_url, headers=headers, stream=True)
         
         # Save the model file
         with open(model_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=1024):
+            for chunk in response.iter_content(chunk_size=32768):
                 if chunk:
                     f.write(chunk)
+                    
+        # Verify the file isn't HTML
+        with open(model_path, "rb") as f:
+            first_bytes = f.read(10)
+            if b'<' in first_bytes:
+                print("The downloaded file appears to be HTML, not a pickle file. Trying alternative method...")
+                os.remove(model_path)
+                
+                # Try alternative direct download approach
+                time.sleep(1)  # Brief pause
+                
+                # Use an alternative method specifically for large files
+                params = {
+                    'id': file_id,
+                    'confirm': 't',
+                    'uuid': '12345',  # Random value to avoid caching
+                    'export': 'download',
+                }
+                
+                response = session.get(
+                    "https://drive.google.com/uc", 
+                    params=params,
+                    headers=headers,
+                    stream=True
+                )
+                
+                with open(model_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=32768):
+                        if chunk:
+                            f.write(chunk)
+                
         print("Modèle téléchargé avec succès")
     
     # Load the model
@@ -41,6 +75,9 @@ def load_model():
         model = pickle.load(f)
     
     return model
+
+# Get the model when needed
+model = load_model()
 
 # Get the model when needed
 model = load_model()
