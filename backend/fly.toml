@@ -3,9 +3,6 @@ primary_region = 'cdg'
 
 [build]
 
-[[mounts]]
-  source = 'model_data'
-  destination = '/app/model_data'
 
 [http_service]
   internal_port = 8000
