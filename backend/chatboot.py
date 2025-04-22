@@ -7,80 +7,51 @@ import pickle
 import requests
 import time
 
-# Charger le pipeline
 def load_model():
+    # Check volume location first
+    volume_model_path = "/app/model_data/model.pkl"
     model_path = "model.pkl"
     
-    # Download model if it doesn't exist locally
-    if not os.path.exists(model_path):
-        print("Téléchargement du modèle depuis Google Drive...")
-        
-        # Your Google Drive file ID
+    # Use model from volume if it exists
+    if os.path.exists(volume_model_path):
+        print("Loading model from volume...")
+        with open(volume_model_path, 'rb') as f:
+            model = pickle.load(f)
+        return model
+    
+    # Fallback to local path
+    if os.path.exists(model_path):
+        print("Loading model from local path...")
+        with open(model_path, 'rb') as f:
+            model = pickle.load(f)
+        return model
+    
+    # If model not found locally, download from Google Drive
+    print("Model not found locally. Downloading from Google Drive...")
+    try:
+        # Extract file ID from the Google Drive link
         file_id = "12zlu_C1WA1SFTla4cUG3hDVRpvqoK0dP"
         
-        # For large files, we need to use a different approach
-        download_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm=t"
+        # Download the file using gdown
+        gdown.download(f"https://drive.google.com/uc?id={file_id}", model_path, quiet=False)
         
-        # Add headers to mimic a browser request
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        
-        # Download with a session to handle cookies
-        session = requests.Session()
-        
-        # First request to get the confirmation token
-        response = session.get(download_url, headers=headers, stream=True)
-        
-        # Save the model file
-        with open(model_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=32768):
-                if chunk:
-                    f.write(chunk)
-                    
-        # Verify the file isn't HTML
-        with open(model_path, "rb") as f:
-            first_bytes = f.read(10)
-            if b'<' in first_bytes:
-                print("The downloaded file appears to be HTML, not a pickle file. Trying alternative method...")
-                os.remove(model_path)
-                
-                # Try alternative direct download approach
-                time.sleep(1)  # Brief pause
-                
-                # Use an alternative method specifically for large files
-                params = {
-                    'id': file_id,
-                    'confirm': 't',
-                    'uuid': '12345',  # Random value to avoid caching
-                    'export': 'download',
-                }
-                
-                response = session.get(
-                    "https://drive.google.com/uc", 
-                    params=params,
-                    headers=headers,
-                    stream=True
-                )
-                
-                with open(model_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=32768):
-                        if chunk:
-                            f.write(chunk)
-                
-        print("Modèle téléchargé avec succès")
-    
-    # Load the model
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
-    
-    return model
+        # Check if download was successful
+        if os.path.exists(model_path):
+            print("Model downloaded successfully!")
+            with open(model_path, 'rb') as f:
+                model = pickle.load(f)
+            return model
+        else:
+            raise FileNotFoundError("Failed to download model file")
+    except Exception as e:
+        raise Exception(f"Error downloading model: {str(e)}")
 
 # Get the model when needed
-model = load_model()
-
-# Get the model when needed
-model = load_model()
+try:
+    model = load_model()
+    print("Model loaded successfully!")
+except Exception as e:
+    print(f"Error loading model: {str(e)}")
 
 intent_responses = {
     "StartConversation": "Welcome! I'm here to answer all your questions about blood donation. Feel free to ask me whatever you're interested in.",
