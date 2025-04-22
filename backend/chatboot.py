@@ -10,44 +10,29 @@ import time
 import gdown
 
 def load_model():
-    volume_model_path = "/app/model_data/model.pkl"
-    model_path = "model.pkl"
-
-    # Vérification du modèle sur le volume
-    if os.path.exists(volume_model_path):
-        print("Loading model from volume...")
-        with open(volume_model_path, 'rb') as f:
-            return pickle.load(f)
-
-    # Vérification du modèle local
+    model_path = "model.pkl"  # Local path in the root directory
+    volume_model_path = "/app/model_data/model.pkl"  # Path on the persistent volume
+    
+    # First check if model exists locally
     if os.path.exists(model_path):
         print("Loading model from local path...")
-        with open(model_path, 'rb') as f:
-            return pickle.load(f)
-
-    # Téléchargement du modèle depuis Google Drive
-    print("Model not found locally. Downloading from Google Drive...")
-    try:
-        # Lien Google Drive (modifié pour un lien de téléchargement direct)
-        url = "https://drive.google.com/uc?export=download&id=12zlu_C1WA1SFTla4cUG3hDVRpvqoK0dP"
-        
-        # Téléchargement avec gdown en mode fuzzy
-        gdown.download(url, model_path, fuzzy=True, quiet=False)
-
-        # Vérification après téléchargement
-        if os.path.exists(model_path):
-            print("Model downloaded successfully!")
+        try:
             with open(model_path, 'rb') as f:
-                # Ajouter une vérification du type de fichier avant de tenter de le charger
-                if model_path.endswith(".pkl"):
-                    return pickle.load(f)
-                else:
-                    raise ValueError(f"Downloaded file is not a valid pickle file: {model_path}")
-        else:
-            raise FileNotFoundError("Failed to download model file")
-    except Exception as e:
-        raise Exception(f"Error downloading or loading model: {str(e)}")
-
+                return pickle.load(f)
+        except Exception as e:
+            print(f"Error loading local model: {str(e)}")
+    
+    # Then check if it exists on the volume
+    if os.path.exists(volume_model_path):
+        print("Loading model from volume...")
+        try:
+            with open(volume_model_path, 'rb') as f:
+                return pickle.load(f)
+        except Exception as e:
+            print(f"Error loading model from volume: {str(e)}")
+    
+    # If not found in either location, raise an error
+    raise FileNotFoundError("Model not found locally or on volume")
 
 # Get the model when needed
 try:
