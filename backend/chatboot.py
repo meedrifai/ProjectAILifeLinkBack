@@ -1,15 +1,37 @@
 import os
 import pickle
+import logging
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-# Calculer le chemin absolu vers model.pkl basé sur l'emplacement du fichier courant
-model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Charger le modèle
-with open(model_path, "rb") as f:
-    model = pickle.load(f)
+# Debug: Afficher le répertoire de travail et les fichiers
+logger.info(f"Répertoire de travail: {os.getcwd()}")
+logger.info(f"Fichiers dans le répertoire: {os.listdir('.')}")
+
+# Vérifier spécifiquement model.pkl
+model_path = "model.pkl"
+logger.info(f"Vérification de {model_path}")
+
+if os.path.exists(model_path):
+    file_size = os.path.getsize(model_path)
+    logger.info(f"✅ {model_path} trouvé! Taille: {file_size} bytes")
+    
+    try:
+        with open(model_path, "rb") as f:
+            model = pickle.load(f)
+        logger.info("✅ Modèle chargé avec succès")
+    except Exception as e:
+        logger.error(f"❌ Erreur lors du chargement du modèle: {e}")
+        raise
+else:
+    logger.error(f"❌ {model_path} n'existe pas!")
+    logger.error(f"Fichiers .pkl disponibles: {[f for f in os.listdir('.') if f.endswith('.pkl')]}")
+    raise FileNotFoundError(f"Le fichier {model_path} est introuvable")
 
 
 # Mapping of predicted intent labels to predefined chatbot responses
