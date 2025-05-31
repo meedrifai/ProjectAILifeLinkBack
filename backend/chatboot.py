@@ -1,11 +1,16 @@
-from fastapi import APIRouter, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import os
 import pickle
 
-# Load the model
-with open("model.pkl", "rb") as f:
+from fastapi import APIRouter
+from pydantic import BaseModel
+
+# Calculer le chemin absolu vers model.pkl basé sur l'emplacement du fichier courant
+model_path = os.path.join(os.path.dirname(__file__), "model.pkl")
+
+# Charger le modèle
+with open(model_path, "rb") as f:
     model = pickle.load(f)
+
 
 # Mapping of predicted intent labels to predefined chatbot responses
 intent_responses = {
