@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Copy just requirements first (to leverage Docker layer caching)
 COPY requirements.txt .
+COPY chatboot.py model.pkl /app/
 
 # Install dependencies with custom cache directory
 RUN pip install --no-cache-dir --cache-dir=/tmp/pip-cache -r requirements.txt
