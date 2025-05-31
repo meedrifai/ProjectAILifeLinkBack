@@ -16,7 +16,7 @@ ADMIN_EMAIL = "rifai.moh.fst@uhp.ac.ma"  # Email to send the form submissions to
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USERNAME = os.getenv("SMTP_USERNAME", "rifai.moh.fst@uhp.ac.ma")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "hrll osvs mlwg gzgv")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "lvac lqux lpnu bsal")
 
 
 def build_email_html(fullname: str, prediction: int) -> str:
